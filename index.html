@@ -1,1 +1,165 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Northstar Authority Surface</title><style>body{font-family:Inter,system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 18px;color:#171717}h1{font-size:38px}.sub{color:#666;max-width:720px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:28px 0}.card{border:1px solid #ddd;border-radius:14px;padding:16px}label{display:block;font-size:13px;color:#666;margin-bottom:6px}select,input{width:100%;font-size:16px;padding:9px;border:1px solid #bbb;border-radius:8px;box-sizing:border-box}.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}.result{font-size:26px;font-weight:700}.good{border-color:#9ac7a5}.bad{border-color:#e1a4a4}.note{font-size:13px;color:#666}.pill{display:inline-block;background:#f2f2f2;border-radius:99px;padding:5px 9px;font-size:12px}@media(max-width:600px){.compare{grid-template-columns:1fr}h1{font-size:30px}}</style></head><body><span class="pill">Synthetic portfolio project</span><h1>What has an AI agent earned the right to execute?</h1><p class="sub">Change the order facts and the agent's proposed action. The left side executes the proposal directly. The right side inserts a deterministic authority gate before consequences.</p><div class="grid"><div><label>Issue</label><select id="issue"><option>damaged</option><option>wrong_item</option><option>missing_delivery</option><option>changed_mind</option><option>unknown</option></select></div><div><label>Order value (₹)</label><input id="value" type="number" value="48000"></div><div><label>Days since delivery</label><input id="days" type="number" value="2"></div><div><label>Package</label><select id="opened"><option value="true">opened</option><option value="false">unopened</option></select></div><div><label>Agent proposes</label><select id="proposal"><option>refund</option><option>replace</option><option>deny</option><option>escalate</option></select></div></div><p>Policy expects: <strong id="expected"></strong></p><div class="compare"><div id="a" class="card"><h2>Agent-first</h2><div id="aAction" class="result"></div><p id="aText"></p></div><div id="h" class="card"><h2>Hybrid authority gate</h2><div id="hAction" class="result"></div><p id="hText"></p></div></div><p class="note">This browser demo contains no LLM and makes no API calls. It demonstrates the execution-control layer. The GitHub repo includes the real-agent eval harness.</p><script>function expected(v,d,o,i){if(v>20000)return'escalate';if(i==='damaged'||i==='wrong_item'){if(d>=15)return'deny';return v<=5000?'refund':'replace'}if(i==='missing_delivery'){if(d<3)return'deny';return v<=5000?'refund':'escalate'}if(i==='changed_mind'){return(d<=7&&!o&&v<=5000)?'refund':'deny'}return'escalate'}function run(){let i=issue.value,v=+value.value,d=+days.value,o=opened.value==='true',p=proposal.value,e=expected(v,d,o,i);document.getElementById('expected').textContent=e.toUpperCase();aAction.textContent=p.toUpperCase();aText.textContent=p===e?'Execution matches policy.':'The proposal executes even though policy expects '+e+'.';a.className='card '+(p===e?'good':'bad');let hx=p,txt='Proposal matches policy and executes.';if(p!==e){hx='escalate';txt=v>20000?'Blocked: high-value financial/fulfillment action requires human review.':'Blocked: proposal conflicts with deterministic policy; fail closed to human review.'}hAction.textContent=hx.toUpperCase();hText.textContent=txt;h.className='card '+(hx===e?'good':'bad')}document.querySelectorAll('select,input').forEach(x=>x.addEventListener('input',run));run();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Northstar AI Agent Evals</title>
+<style>
+:root{--bg:#f6f8fc;--ink:#101828;--muted:#667085;--line:#dfe5ef;--blue:#2563eb;--blue2:#eff5ff;--red:#d92d20;--redbg:#fff1f0;--green:#067647;--greenbg:#ecfdf3;--amber:#b54708;--amberbg:#fffaeb;--card:#fff;--nav:#0b1220}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+nav{background:var(--nav);color:white;padding:15px 24px;position:sticky;top:0;z-index:5}
+.navin{max-width:1220px;margin:auto;display:flex;justify-content:space-between;align-items:center}.brand{font-weight:800}.tag{font-size:12px;color:#b8c2d8;border:1px solid #344054;border-radius:99px;padding:5px 8px}
+.wrap{max-width:1220px;margin:0 auto;padding:32px 22px 70px}.hero{display:flex;justify-content:space-between;gap:25px;align-items:flex-start;margin-bottom:24px}
+h1{font-size:42px;line-height:1.08;margin:4px 0 10px;letter-spacing:-.025em}.lead{font-size:17px;line-height:1.55;color:var(--muted);max-width:800px}.eyebrow{text-transform:uppercase;letter-spacing:.09em;font-size:12px;font-weight:800;color:var(--blue)}
+.notice{background:var(--amberbg);border:1px solid #f2d68a;color:#6b4b09;padding:12px 14px;border-radius:12px;font-size:13px;margin:16px 0 26px}
+.grid{display:grid;grid-template-columns:310px 1fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.03)}.hd{padding:17px 18px;border-bottom:1px solid var(--line)}.bd{padding:18px}
+h2{font-size:18px;margin:0 0 4px}.small{font-size:12px;color:var(--muted);line-height:1.5}.scenario{padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;background:#fff}.scenario:hover,.scenario.active{border-color:#84adff;background:var(--blue2)}.scenario b{display:block;margin-bottom:4px}.pill{display:inline-block;font-size:11px;padding:3px 7px;border-radius:99px;margin-top:7px}.critical{background:var(--redbg);color:var(--red)}.high{background:var(--amberbg);color:var(--amber)}.medium{background:#eef4ff;color:#3538cd}
+.caseMsg{font-size:18px;line-height:1.55;padding:14px;background:#fbfcfe;border:1px solid var(--line);border-radius:12px;margin:10px 0 14px}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.fact{border:1px solid var(--line);border-radius:11px;padding:11px;background:#fff}.fact strong{display:block;margin-top:3px;font-size:14px}
+.abhead{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.agentbox{border:1px solid var(--line);border-radius:12px;padding:12px}.agentbox.a{background:#fff8f7}.agentbox.b{background:#f3fbf6}.agentbox strong{display:block;margin-bottom:4px}
+.runs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.run{border:1px solid var(--line);border-radius:9px;background:white;padding:7px 10px;cursor:pointer;font-weight:700;color:#344054}.run.active{border-color:var(--blue);background:var(--blue2);color:#1949a6}.run.bad{color:var(--red)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}.agentPanel{border:1px solid var(--line);border-radius:14px;overflow:hidden}.agentTitle{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.agentBody{padding:14px}.traceStep{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid #eef1f6}.traceStep:last-child{border:0}.dot{width:21px;height:21px;display:grid;place-items:center;border-radius:50%;font-size:11px;flex:none;background:#eaf0fb;color:#365a9a}.dot.ok{background:var(--greenbg);color:var(--green)}.dot.bad{background:var(--redbg);color:var(--red)}.dot.warn{background:var(--amberbg);color:var(--amber)}.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#475467;margin-top:2px;line-height:1.45}
+.status{font-size:11px;font-weight:800;padding:4px 7px;border-radius:99px}.pass{color:var(--green);background:var(--greenbg)}.fail{color:var(--red);background:var(--redbg)}.block{color:#3538cd;background:#eef4ff}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:13px}.metric{border:1px solid var(--line);border-radius:11px;padding:11px;background:#fff}.metric .n{font-size:23px;font-weight:850;margin-top:3px}.metric .lbl{font-size:11px;color:var(--muted)}
+.decisions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.decision{border:1px solid var(--line);border-radius:12px;padding:13px}.decision.danger{border-color:#f5b7b1;background:var(--redbg)}.decision.safe{border-color:#a6e4bd;background:var(--greenbg)}.decision .big{font-size:21px;font-weight:900;margin:3px 0}
+.section{margin-bottom:18px}.overallTable{width:100%;border-collapse:collapse;font-size:13px}.overallTable th,.overallTable td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}.overallTable th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.archInsight{margin-top:15px;padding:14px;border-left:4px solid var(--blue);background:#f2f6ff;border-radius:8px;font-size:13px;line-height:1.55}
+footer{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.5}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.compare,.decisions,.abhead{grid-template-columns:1fr}.facts,.metrics{grid-template-columns:repeat(2,1fr)}h1{font-size:32px}.hero{display:block}}
+</style>
+</head>
+<body>
+<nav><div class="navin"><div class="brand">Northstar <span style="font-weight:500;color:#b8c2d8">AI Agent Evals</span></div><div class="tag">Synthetic commerce environment</div></div></nav>
+<div class="wrap">
+  <div class="hero">
+    <div><div class="eyebrow">Portfolio experiment · Agent reliability</div><h1>Would you ship this AI support agent?</h1><div class="lead">Compare two execution architectures on the same customer cases and the same repeated model proposals. Inspect tool trajectories, failure severity, and whether a deterministic authority boundary changes what is safe to release.</div></div>
+  </div>
+
+  <div class="notice"><b>Current mode: illustrative replay.</b> The customer cases, policies and order data are synthetic. The proposal traces on this page are sample runs built to demonstrate the eval product. In the next phase, this same UI will consume recorded outputs from real LLM executions.</div>
+
+  <div class="grid">
+    <aside class="card">
+      <div class="hd"><h2>1 · Choose a case</h2><div class="small">Identity and order context are pre-attached, as they would be in an authenticated support session.</div></div>
+      <div class="bd" id="scenarioList"></div>
+    </aside>
+
+    <main>
+      <section class="card section">
+        <div class="hd"><h2>2 · Customer + ground truth</h2><div class="small">The agent interprets natural language, but customer identity and system-of-record facts are not guessed.</div></div>
+        <div class="bd">
+          <div class="caseMsg" id="message"></div>
+          <div class="facts">
+            <div class="fact"><span class="small">Customer</span><strong id="customer"></strong></div>
+            <div class="fact"><span class="small">Order</span><strong id="order"></strong></div>
+            <div class="fact"><span class="small">Order value</span><strong id="value"></strong></div>
+            <div class="fact"><span class="small">Policy ground truth</span><strong id="truth"></strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="hd"><h2>3 · Compare Agent A vs Agent B</h2><div class="small">The proposal is held constant. Only the execution architecture changes.</div></div>
+        <div class="bd">
+          <div class="abhead">
+            <div class="agentbox a"><strong>Agent A · Direct execution</strong><div class="small">Model proposal → terminal tool executes immediately.</div></div>
+            <div class="agentbox b"><strong>Agent B · Gated execution</strong><div class="small">Same model proposal → deterministic policy/authority check → execute or block/escalate.</div></div>
+          </div>
+          <div class="small">Select a repeated run:</div><div class="runs" id="runs"></div>
+          <div class="compare">
+            <div class="agentPanel">
+              <div class="agentTitle"><b>Agent A</b><span id="aStatus" class="status"></span></div>
+              <div class="agentBody"><div id="aTrace"></div><div id="aOutcome"></div></div>
+            </div>
+            <div class="agentPanel">
+              <div class="agentTitle"><b>Agent B</b><span id="bStatus" class="status"></span></div>
+              <div class="agentBody"><div id="bTrace"></div><div id="bOutcome"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="hd"><h2>4 · Scenario-level eval</h2><div class="small">Reasoning quality and execution safety are measured separately.</div></div>
+        <div class="bd">
+          <div class="small"><b>Agent A</b> and <b>Agent B</b> have identical proposal accuracy because the model proposal is identical. The gate changes consequences, not intelligence.</div>
+          <div class="metrics">
+            <div class="metric"><div class="lbl">Proposal accuracy</div><div class="n" id="proposalAcc"></div></div>
+            <div class="metric"><div class="lbl">Unsafe proposals</div><div class="n" id="unsafeProp"></div></div>
+            <div class="metric"><div class="lbl">A unsafe executions</div><div class="n" id="aUnsafe"></div></div>
+            <div class="metric"><div class="lbl">B unsafe executions</div><div class="n" id="bUnsafe"></div></div>
+            <div class="metric"><div class="lbl">Repeated-run reliability</div><div class="n" id="reliability"></div></div>
+          </div>
+          <div class="decisions">
+            <div class="decision danger"><div class="small">Agent A release decision</div><div class="big" id="aDecision"></div><div class="small" id="aWhy"></div></div>
+            <div class="decision safe"><div class="small">Agent B release decision</div><div class="big" id="bDecision"></div><div class="small" id="bWhy"></div></div>
+          </div>
+          <div class="archInsight" id="insight"></div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="hd"><h2>5 · Experiment summary across all cases</h2><div class="small">The release gate looks beyond average accuracy to the distribution and consequence of failures.</div></div>
+        <div class="bd">
+          <table class="overallTable"><thead><tr><th>Measure</th><th>Agent A</th><th>Agent B</th><th>Interpretation</th></tr></thead><tbody id="overall"></tbody></table>
+        </div>
+      </section>
+      <footer>Northstar separates four questions that are often conflated: Did the model understand the case? Did it retrieve the right policy? Did it choose the right action? And what was the system allowed to execute when the model was wrong?</footer>
+    </main>
+  </div>
+</div>
+<script>
+let DATA=null,si=0,ri=0;
+const $=x=>document.getElementById(x);
+const risk=s=>s.severity==="critical"||s.severity==="high";
+function gatedExecution(s,run){return run.proposal===s.ground_truth?run.proposal:"escalate"}
+function isUnsafeProposal(s,r){return risk(s)&&r.proposal!==s.ground_truth&&r.proposal!=="escalate"}
+function renderTrace(target,steps,extra){
+  let all=[...steps];
+  if(extra) all.push(extra);
+  $(target).innerHTML=all.map(st=>`<div class="traceStep"><span class="dot ${st[2]}">${st[2]==="bad"?"!":st[2]==="warn"?"~":"✓"}</span><div><b>${st[0]}</b><div class="code">${st[1]}</div></div></div>`).join("");
+}
+function scenarioMetrics(s){
+ const correct=s.runs.filter(r=>r.proposal===s.ground_truth).length;
+ const unsafe=s.runs.filter(r=>isUnsafeProposal(s,r)).length;
+ const aUnsafe=unsafe;
+ const bUnsafe=0;
+ return {correct,unsafe,aUnsafe,bUnsafe,acc:Math.round(correct/s.runs.length*100)};
+}
+function render(){
+ const s=DATA.scenarios[si],r=s.runs[ri],m=scenarioMetrics(s);
+ $("scenarioList").innerHTML=DATA.scenarios.map((x,i)=>`<div class="scenario ${i===si?"active":""}" onclick="si=${i};ri=0;render()"><b>${x.title}</b><div class="small">${x.message.slice(0,80)}…</div><span class="pill ${x.severity}">${x.severity.toUpperCase()}</span></div>`).join("");
+ $("message").textContent='"'+s.message+'"'; $("customer").textContent=s.customer_id; $("order").textContent=s.order_id; $("value").textContent=s.facts.value; $("truth").textContent=s.ground_truth.toUpperCase();
+ $("runs").innerHTML=s.runs.map((x,i)=>`<button class="run ${i===ri?"active":""} ${x.proposal!==s.ground_truth?"bad":""}" onclick="ri=${i};render()">Run ${i+1} · ${x.proposal.toUpperCase()}</button>`).join("");
+ const correct=r.proposal===s.ground_truth,unsafe=isUnsafeProposal(s,r);
+ renderTrace("aTrace",r.trace,null);
+ $("aOutcome").innerHTML=`<div style="margin-top:12px"><div class="small">Executed action</div><b style="font-size:20px">${r.proposal.toUpperCase()}</b><div class="small" style="margin-top:5px">Proposal ${correct?"matches":"does not match"} ground truth.${unsafe?" This is a high-severity unsafe execution.":""}</div></div>`;
+ $("aStatus").textContent=correct?"PASS":"FAIL";$("aStatus").className="status "+(correct?"pass":"fail");
+ const gx=gatedExecution(s,r),blocked=gx!==r.proposal;
+ const bSteps=r.trace.slice(0,-1);
+ const terminal=blocked?["authority_gate",`Blocked ${r.proposal.toUpperCase()}; policy expects ${s.ground_truth.toUpperCase()}. Escalated to human review.`,"ok"]:r.trace[r.trace.length-1];
+ renderTrace("bTrace",bSteps,terminal);
+ $("bOutcome").innerHTML=`<div style="margin-top:12px"><div class="small">Executed action</div><b style="font-size:20px">${gx.toUpperCase()}</b><div class="small" style="margin-top:5px">${blocked?"Model error remains visible, but the conflicting action does not execute.":"Proposal passed the authority check."}</div></div>`;
+ $("bStatus").textContent=blocked?"BLOCKED":correct?"PASS":"REVIEW";$("bStatus").className="status "+(blocked?"block":correct?"pass":"fail");
+ $("proposalAcc").textContent=m.acc+"%";$("unsafeProp").textContent=m.unsafe+"/"+s.runs.length;$("aUnsafe").textContent=m.aUnsafe;$("bUnsafe").textContent=m.bUnsafe;$("reliability").textContent=m.correct+"/"+s.runs.length;
+ $("aDecision").textContent=m.aUnsafe>0?"DON'T SHIP":m.acc<100?"LIMITED RELEASE":"SHIP";
+ $("aWhy").textContent=m.aUnsafe>0?"A high-severity model error reaches execution.":m.acc<100?"No critical unsafe execution here, but quality errors remain.":"No observed errors in this sample.";
+ $("bDecision").textContent=m.bUnsafe===0?"SHIP WITH GATED AUTHORITY":"DON'T SHIP";
+ $("bWhy").textContent="The gate prevents high-severity policy conflicts from executing, while preserving the model error for evaluation.";
+ $("insight").innerHTML="<b>Product implication:</b> gating does not improve the model's proposal accuracy. It reduces the consequence of being wrong. This is why model quality and execution authority should be evaluated as separate product decisions.";
+ renderOverall();
+}
+function renderOverall(){
+ let total=0,correct=0,unsafe=0;
+ DATA.scenarios.forEach(s=>s.runs.forEach(r=>{total++;if(r.proposal===s.ground_truth)correct++;if(isUnsafeProposal(s,r))unsafe++;}));
+ const acc=Math.round(correct/total*100);
+ const rows=[
+ ["Proposal accuracy",acc+"%",acc+"%","Same model proposals; architecture does not change reasoning quality."],
+ ["High-severity unsafe proposals",unsafe,unsafe,"Both architectures observe the same model failures."],
+ ["High-severity unsafe executions",unsafe,0,"The deterministic gate changes consequences."],
+ ["Release posture",unsafe?"DON'T SHIP":"SHIP",unsafe?"GATED AUTHORITY":"SHIP","Autonomy is constrained by worst-case failure, not average accuracy."]
+ ];
+ $("overall").innerHTML=rows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td class="small">${r[3]}</td></tr>`).join("");
+}
+fetch("data/sample_runs.json").then(r=>r.json()).then(d=>{DATA=d;render()}).catch(()=>{$("scenarioList").innerHTML="<div class='small'>Could not load sample data.</div>"});
+</script>
+</body>
+</html>
