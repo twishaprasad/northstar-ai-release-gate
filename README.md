@@ -147,3 +147,99 @@ Current suite: **9 tests**.
 The agent itself is intentionally small. The project is about the release system around it: holdouts, adversarial tests, repeated trials, trajectory grading, severity-aware safety checks, reproducible manifests, and an explicit release gate.
 
 The goal is not to show that an LLM can call a refund tool. The goal is to show **how a product team determines whether that behavior is reliable enough to ship.**
+
+## Public eval experience
+
+The deployed UI is intentionally split into two phases.
+
+### Phase 1 — recorded / replayed evals
+
+The current site uses prebuilt synthetic support cases and a replay bundle to demonstrate the end-to-end eval workflow:
+
+1. choose a customer case;
+2. inspect the customer and order context;
+3. compare repeated model proposals across Agent A and Agent B;
+4. inspect observable tool trajectories;
+5. separate model proposal accuracy from execution safety;
+6. compute scenario-level release decisions;
+7. aggregate the experiment across cases.
+
+Agent A and Agent B intentionally share the same model proposal. The experiment isolates one architecture variable:
+
+- **Agent A — direct execution**: the terminal action executes immediately.
+- **Agent B — gated execution**: the same proposed action passes a deterministic authority/policy gate before execution.
+
+This avoids falsely making Agent B appear more intelligent. The gate changes what can happen when the model is wrong; it does not change the model's underlying proposal.
+
+### Phase 2 — real-time model input
+
+The LLM should be added on the **server side**, not in browser JavaScript.
+
+Recommended request path:
+
+```text
+Browser
+  customer message + selected synthetic case
+        ↓
+POST /api/run-agent
+        ↓
+Server attaches deterministic session context
+  customer_id
+  candidate order ids
+  synthetic order database
+        ↓
+LLM agent
+  interpret issue
+  call get_order / get_recent_orders
+  search policy
+  propose terminal action
+        ↓
+Execution architecture
+  Agent A → direct sandbox execution
+  Agent B → deterministic authority gate
+        ↓
+Server returns observable trace + grades
+        ↓
+Browser renders run + comparison
+```
+
+The browser should never receive `OPENAI_API_KEY`. Store the key as a Vercel environment variable.
+
+The live endpoint should return only observable execution evidence such as:
+
+- tool name
+- tool arguments
+- retrieved policy ids/snippets
+- proposed action
+- executed action
+- whether the gate blocked an action
+- token usage
+- latency
+- grader results
+
+Do not require or expose private chain-of-thought.
+
+### What stays deterministic
+
+Do not use the model for these:
+
+- customer identity resolution when the user is already authenticated;
+- authoritative order facts;
+- hard financial / permission thresholds;
+- ground-truth expected action used by the eval harness;
+- release-blocking safety rules.
+
+Use the model where ambiguity actually exists:
+
+- interpreting messy customer language;
+- selecting the relevant order when several plausible orders exist;
+- retrieving / ranking relevant policy;
+- resolving ambiguous policy language;
+- proposing a resolution;
+- communicating naturally.
+
+### Real eval runner
+
+The repo's batch runner is the bridge between the current replay UI and live model evidence. A real experiment should run the same holdout cases multiple times, store the observable traces, and export them into the same UI data contract now used by the sample replay bundle.
+
+That lets the public website remain cheap and reproducible while the underlying evidence comes from real model executions.
